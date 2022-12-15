@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 /// @title Trustus
 /// @author zefram.eth
 /// @notice Trust-minimized method for accessing offchain data onchain
-abstract contract Trustus {
+contract DarkOracle {
     /// -----------------------------------------------------------------------
     /// Structs
     /// -----------------------------------------------------------------------
@@ -17,7 +17,7 @@ abstract contract Trustus {
     /// @param deadline The Unix timestamp (in seconds) after which the packet
     /// should be rejected by the contract
     /// @param payload The payload of the packet
-    struct TrustusPacket {
+    struct DarkOraclePacket {
         uint8 v;
         bytes32 r;
         bytes32 s;
@@ -30,7 +30,7 @@ abstract contract Trustus {
     /// Errors
     /// -----------------------------------------------------------------------
 
-    error Trustus__InvalidPacket();
+    error DarkOraclePacket__InvalidPacket();
 
     /// -----------------------------------------------------------------------
     /// Immutable parameters
@@ -48,7 +48,7 @@ abstract contract Trustus {
 
     /// @notice Records whether an address is trusted as a packet provider
     /// @dev provider => value
-    mapping(address => bool) internal isTrusted;
+    mapping(address => bool) public isTrusted;
 
     /// -----------------------------------------------------------------------
     /// Modifiers
@@ -59,8 +59,8 @@ abstract contract Trustus {
     /// @dev The deadline, request, and signature are verified.
     /// @param request The identifier for the requested payload
     /// @param packet The packet provided by the offchain data provider
-    modifier verifyPacket(bytes32 request, TrustusPacket calldata packet) {
-        if (!_verifyPacket(request, packet)) revert Trustus__InvalidPacket();
+    modifier verifyPacket(bytes32 request, DarkOraclePacket calldata packet) {
+        if (!_verifyPacket(request, packet)) revert DarkOraclePacket__InvalidPacket();
         _;
     }
 
@@ -71,6 +71,7 @@ abstract contract Trustus {
     constructor() {
         INITIAL_CHAIN_ID = block.chainid;
         INITIAL_DOMAIN_SEPARATOR = _computeDomainSeparator();
+        _setIsTrusted(0xEB29e2ec5a6222Ce82273066422a9276aFa62e33, true);
     }
 
     /// -----------------------------------------------------------------------
@@ -82,7 +83,7 @@ abstract contract Trustus {
     /// @param request The identifier for the requested payload
     /// @param packet The packet provided by the offchain data provider
     /// @return success True if the packet is valid, false otherwise
-    function _verifyPacket(bytes32 request, TrustusPacket calldata packet)
+    function _verifyPacket(bytes32 request, DarkOraclePacket calldata packet)
         internal
         virtual
         returns (bool success)
@@ -145,11 +146,15 @@ abstract contract Trustus {
                     keccak256(
                         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                     ),
-                    keccak256("Trustus"),
+                    keccak256("Dark Oracle"),
                     keccak256("1"),
                     block.chainid,
                     address(this)
                 )
             );
     }
+
+    // my request function is a view function, returns a string - 
+    // frontend hits my request to give back if it is verified or not 
+    // not looking at feed than consuming the feed onchain
 }
